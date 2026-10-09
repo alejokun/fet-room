@@ -1,0 +1,15 @@
+# Python / Django
+backend/venv/
+*.pyc
+__pycache__/
+*.sqlite3
+
+# Node / Angular
+frontend/fet-room-app/node_modules/
+frontend/fet-room-app/dist/
+
+# IDEs & OS
+.vscode/
+.idea/
+.env
+.DS_Store
