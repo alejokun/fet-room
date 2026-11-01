@@ -1,344 +1,672 @@
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * The content below * * * * * * * * * * * -->
-<!-- * * * * * * * * * * is only a placeholder * * * * * * * * * * -->
-<!-- * * * * * * * * * * and can be replaced.  * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * Delete the template below * * * * * * * * * -->
-<!-- * * * * * * * to get started with your project! * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
+  @if (auth.restoring()) {
+  <main class="session-check" role="status" aria-live="polite">
+    <div class="brand-mark"><span>F</span><span>R</span></div>
+    <span class="session-spinner" aria-hidden="true"></span>
+    <p>Verificando tu sesión</p>
+  </main>
+} @else if (!auth.session()) {
+  <main class="login-page">
+    <section class="login-panel" aria-labelledby="login-title">
+      <div class="brand-mark" aria-label="FET Room"><span>F</span><span>R</span></div>
+      <p class="eyebrow">Fundación Escuela Tecnológica</p>
+      <h1 id="login-title">Gestión de espacios</h1>
+      <p class="login-copy">Ingresa con tu cuenta institucional para consultar las aulas.</p>
 
-<style>
-  :host {
-    --bright-blue: oklch(51.01% 0.274 263.83);
-    --electric-violet: oklch(53.18% 0.28 296.97);
-    --french-violet: oklch(47.66% 0.246 305.88);
-    --vivid-pink: oklch(69.02% 0.277 332.77);
-    --hot-red: oklch(61.42% 0.238 15.34);
-    --orange-red: oklch(63.32% 0.24 31.68);
+      @if (auth.expired()) {
+        <div class="alert" role="alert">Tu sesión expiró. Ingresa de nuevo para continuar.</div>
+      }
+      @if (error()) {
+        <div class="alert" role="alert">{{ error() }}</div>
+      }
 
-    --gray-900: oklch(19.37% 0.006 300.98);
-    --gray-700: oklch(36.98% 0.014 302.71);
-    --gray-400: oklch(70.9% 0.015 304.04);
+      <form class="login-form" (ngSubmit)="signIn()">
+        <label for="username">Usuario</label>
+        <input
+          id="username"
+          name="username"
+          [(ngModel)]="username"
+          autocomplete="username"
+          required
+        >
+        <label for="password">Contraseña</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          [(ngModel)]="password"
+          autocomplete="current-password"
+          required
+        >
+        <button class="primary-button login-button" type="submit" [disabled]="submitting()">
+          {{ submitting() ? 'Ingresando…' : 'Ingresar' }}
+        </button>
+      </form>
+      <p class="login-footnote">Acceso para personal autorizado</p>
+    </section>
+    <aside class="login-aside" aria-hidden="true">
+      <div class="aside-topline"><span>FET · HUILA</span><span>01 / 04</span></div>
+      <div class="building-shape">
+        <div class="building-roof"></div>
+        <div class="building-body">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <div class="building-base"></div>
+      </div>
+      <div class="aside-caption"><span>Infraestructura académica</span><span>Neiva, Colombia</span></div>
+    </aside>
+  </main>
+} @else {
+  <div class="workspace">
+    <aside class="sidebar">
+      <div class="wordmark" aria-label="FET Room">
+        <span class="brand-mark small"><span>F</span><span>R</span></span>
+        <span>FET<span class="wordmark-light">ROOM</span></span>
+      </div>
+      <div class="sidebar-label">GESTIÓN ACADÉMICA</div>
+      <nav aria-label="Navegación principal">
+        <button class="nav-item" [class.active]="activeView() === 'aulas'" type="button" [attr.aria-current]="activeView() === 'aulas' ? 'page' : null" (click)="setView('aulas')">
+          <span class="nav-indicator"></span>
+          <span>Aulas</span>
+          <span class="nav-count">{{ aulas().length }}</span>
+        </button>
+        <button class="nav-item" [class.active]="activeView() === 'profesores'" type="button" [attr.aria-current]="activeView() === 'profesores' ? 'page' : null" (click)="setView('profesores')">
+          <span class="nav-indicator"></span>
+          <span>Profesores</span>
+          <span class="nav-count">{{ profesores().length }}</span>
+        </button>
+        <button class="nav-item" [class.active]="activeView() === 'ofertas'" type="button" [attr.aria-current]="activeView() === 'ofertas' ? 'page' : null" (click)="setView('ofertas')">
+          <span class="nav-indicator"></span>
+          <span>Materias y grupos</span>
+          <span class="nav-count">{{ grupos().length }}</span>
+        </button>
+        <button class="nav-item" [class.active]="activeView() === 'asignacion'" type="button" [attr.aria-current]="activeView() === 'asignacion' ? 'page' : null" (click)="setView('asignacion')">
+          <span class="nav-indicator"></span>
+          <span>Asignación auto</span>
+          <span class="nav-count">{{ grupos().filter(g => g.modalidad === 'PRESENCIAL').length }}</span>
+        </button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="connection-state">
+          <span class="status-dot" [class.offline]="!apiConnected()" [class.pending]="loading()"></span>
+          {{ loading() ? 'Consultando API' : apiConnected() ? 'Conectado a PostgreSQL' : 'API no disponible' }}
+        </div>
+        <p>Inventario académico<br>FET del Huila</p>
+      </div>
+    </aside>
 
-    --red-to-pink-to-purple-vertical-gradient: linear-gradient(
-      180deg,
-      var(--orange-red) 0%,
-      var(--vivid-pink) 50%,
-      var(--electric-violet) 100%
-    );
+    <main class="main-content">
+      <header class="topbar">
+        <div class="breadcrumb"><span>Gestión</span><span>/</span><strong>{{ activeView() === 'aulas' ? 'Inventario de aulas' : activeView() === 'profesores' ? 'Profesores' : activeView() === 'ofertas' ? 'Materias y grupos' : 'Asignación automática' }}</strong></div>
+        <div class="user-menu">
+          <div class="user-avatar">{{ auth.session()?.username?.slice(0, 1)?.toUpperCase() }}</div>
+          <div class="user-details">
+            <strong>{{ auth.session()?.username }}</strong>
+            <span>{{ auth.session()?.groups?.[0] ?? 'Usuario' }}</span>
+          </div>
+          <button class="text-button" type="button" (click)="signOut()">Salir</button>
+        </div>
+      </header>
 
-    --red-to-pink-to-purple-horizontal-gradient: linear-gradient(
-      90deg,
-      var(--orange-red) 0%,
-      var(--vivid-pink) 50%,
-      var(--electric-violet) 100%
-    );
-
-    --pill-accent: var(--bright-blue);
-
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-      "Segoe UI Symbol";
-    box-sizing: border-box;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    display: block;
-    height: 100dvh;
-  }
-
-  h1 {
-    font-size: 3.125rem;
-    color: var(--gray-900);
-    font-weight: 500;
-    line-height: 100%;
-    letter-spacing: -0.125rem;
-    margin: 0;
-    font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-      "Segoe UI Symbol";
-  }
-
-  p {
-    margin: 0;
-    color: var(--gray-700);
-  }
-
-  main {
-    width: 100%;
-    min-height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 1rem;
-    box-sizing: inherit;
-    position: relative;
-  }
-
-  .angular-logo {
-    max-width: 9.2rem;
-  }
-
-  .content {
-    display: flex;
-    justify-content: space-around;
-    width: 100%;
-    max-width: 700px;
-    margin-bottom: 3rem;
-  }
-
-  .content h1 {
-    margin-top: 1.75rem;
-  }
-
-  .content p {
-    margin-top: 1.5rem;
-  }
-
-  .divider {
-    width: 1px;
-    background: var(--red-to-pink-to-purple-vertical-gradient);
-    margin-inline: 0.5rem;
-  }
-
-  .pill-group {
-    display: flex;
-    flex-direction: column;
-    align-items: start;
-    flex-wrap: wrap;
-    gap: 1.25rem;
-  }
-
-  .pill {
-    display: flex;
-    align-items: center;
-    --pill-accent: var(--bright-blue);
-    background: color-mix(in srgb, var(--pill-accent) 5%, transparent);
-    color: var(--pill-accent);
-    padding-inline: 0.75rem;
-    padding-block: 0.375rem;
-    border-radius: 2.75rem;
-    border: 0;
-    transition: background 0.3s ease;
-    font-family: var(--inter-font);
-    font-size: 0.875rem;
-    font-style: normal;
-    font-weight: 500;
-    line-height: 1.4rem;
-    letter-spacing: -0.00875rem;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-
-  .pill:hover {
-    background: color-mix(in srgb, var(--pill-accent) 15%, transparent);
-  }
-
-  .pill-group .pill:nth-child(6n + 1) {
-    --pill-accent: var(--bright-blue);
-  }
-  .pill-group .pill:nth-child(6n + 2) {
-    --pill-accent: var(--electric-violet);
-  }
-  .pill-group .pill:nth-child(6n + 3) {
-    --pill-accent: var(--french-violet);
-  }
-
-  .pill-group .pill:nth-child(6n + 4),
-  .pill-group .pill:nth-child(6n + 5),
-  .pill-group .pill:nth-child(6n + 6) {
-    --pill-accent: var(--hot-red);
-  }
-
-  .pill-group svg {
-    margin-inline-start: 0.25rem;
-  }
-
-  .social-links {
-    display: flex;
-    align-items: center;
-    gap: 0.73rem;
-    margin-top: 1.5rem;
-  }
-
-  .social-links path {
-    transition: fill 0.3s ease;
-    fill: var(--gray-400);
-  }
-
-  .social-links a:hover svg path {
-    fill: var(--gray-900);
-  }
-
-  @media screen and (max-width: 650px) {
-    .content {
-      flex-direction: column;
-      width: max-content;
-    }
-
-    .divider {
-      height: 1px;
-      width: 100%;
-      background: var(--red-to-pink-to-purple-horizontal-gradient);
-      margin-block: 1.5rem;
-    }
-  }
-</style>
-
-<main class="main">
-  <div class="content">
-    <div class="left-side">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 982 239"
-        fill="none"
-        class="angular-logo"
-      >
-        <g clip-path="url(#a)">
-          <path
-            fill="url(#b)"
-            d="M388.676 191.625h30.849L363.31 31.828h-35.758l-56.215 159.797h30.848l13.174-39.356h60.061l13.256 39.356Zm-65.461-62.675 21.602-64.311h1.227l21.602 64.311h-44.431Zm126.831-7.527v70.202h-28.23V71.839h27.002v20.374h1.392c2.782-6.71 7.2-12.028 13.255-15.956 6.056-3.927 13.584-5.89 22.503-5.89 8.264 0 15.465 1.8 21.684 5.318 6.137 3.518 10.964 8.673 14.319 15.382 3.437 6.71 5.074 14.81 4.992 24.383v76.175h-28.23v-71.92c0-8.019-2.046-14.237-6.219-18.819-4.173-4.5-9.819-6.791-17.102-6.791-4.91 0-9.328 1.063-13.174 3.272-3.846 2.128-6.792 5.237-9.001 9.328-2.046 4.009-3.191 8.918-3.191 14.728ZM589.233 239c-10.147 0-18.82-1.391-26.103-4.091-7.282-2.7-13.092-6.382-17.511-10.964-4.418-4.582-7.528-9.655-9.164-15.219l25.448-6.136c1.145 2.372 2.782 4.663 4.991 6.954 2.209 2.291 5.155 4.255 8.837 5.81 3.683 1.554 8.428 2.291 14.074 2.291 8.019 0 14.647-1.964 19.884-5.81 5.237-3.845 7.856-10.227 7.856-19.064v-22.665h-1.391c-1.473 2.946-3.601 5.892-6.383 9.001-2.782 3.109-6.464 5.645-10.965 7.691-4.582 2.046-10.228 3.109-17.101 3.109-9.165 0-17.511-2.209-25.039-6.545-7.446-4.337-13.42-10.883-17.757-19.474-4.418-8.673-6.628-19.473-6.628-32.565 0-13.091 2.21-24.301 6.628-33.383 4.419-9.082 10.311-15.955 17.839-20.7 7.528-4.746 15.874-7.037 25.039-7.037 7.037 0 12.846 1.145 17.347 3.518 4.582 2.373 8.182 5.236 10.883 8.51 2.7 3.272 4.746 6.382 6.137 9.327h1.554v-19.8h27.821v121.749c0 10.228-2.454 18.737-7.364 25.447-4.91 6.709-11.538 11.7-20.048 15.055-8.509 3.355-18.165 4.991-28.884 4.991Zm.245-71.266c5.974 0 11.047-1.473 15.302-4.337 4.173-2.945 7.446-7.118 9.573-12.519 2.21-5.482 3.274-12.027 3.274-19.637 0-7.609-1.064-14.155-3.274-19.8-2.127-5.646-5.318-10.064-9.491-13.255-4.174-3.11-9.329-4.746-15.384-4.746s-11.537 1.636-15.792 4.91c-4.173 3.272-7.365 7.772-9.492 13.418-2.128 5.727-3.191 12.191-3.191 19.392 0 7.2 1.063 13.745 3.273 19.228 2.127 5.482 5.318 9.736 9.573 12.764 4.174 3.027 9.41 4.582 15.629 4.582Zm141.56-26.51V71.839h28.23v119.786h-27.412v-21.273h-1.227c-2.7 6.709-7.119 12.191-13.338 16.446-6.137 4.255-13.747 6.382-22.748 6.382-7.855 0-14.81-1.718-20.783-5.237-5.974-3.518-10.72-8.591-14.075-15.382-3.355-6.709-5.073-14.891-5.073-24.464V71.839h28.312v71.921c0 7.609 2.046 13.664 6.219 18.083 4.173 4.5 9.655 6.709 16.365 6.709 4.173 0 8.183-.982 12.111-3.028 3.927-2.045 7.118-5.072 9.655-9.082 2.537-4.091 3.764-9.164 3.764-15.218Zm65.707-109.395v159.796h-28.23V31.828h28.23Zm44.841 162.169c-7.61 0-14.402-1.391-20.457-4.091-6.055-2.7-10.883-6.791-14.32-12.109-3.518-5.319-5.237-11.946-5.237-19.801 0-6.791 1.228-12.355 3.765-16.773 2.536-4.419 5.891-7.937 10.228-10.637 4.337-2.618 9.164-4.664 14.647-6.055 5.4-1.391 11.046-2.373 16.856-3.027 7.037-.737 12.683-1.391 17.102-1.964 4.337-.573 7.528-1.555 9.574-2.782 1.963-1.309 3.027-3.273 3.027-5.973v-.491c0-5.891-1.718-10.391-5.237-13.664-3.518-3.191-8.51-4.828-15.056-4.828-6.955 0-12.356 1.473-16.447 4.5-4.009 3.028-6.71 6.546-8.183 10.719l-26.348-3.764c2.046-7.282 5.483-13.336 10.31-18.328 4.746-4.909 10.638-8.59 17.511-11.045 6.955-2.455 14.565-3.682 22.912-3.682 5.809 0 11.537.654 17.265 2.045s10.965 3.6 15.711 6.71c4.746 3.109 8.51 7.282 11.455 12.6 2.864 5.318 4.337 11.946 4.337 19.883v80.184h-27.166v-16.446h-.9c-1.719 3.355-4.092 6.464-7.201 9.328-3.109 2.864-6.955 5.237-11.619 6.955-4.828 1.718-10.229 2.536-16.529 2.536Zm7.364-20.701c5.646 0 10.556-1.145 14.729-3.354 4.173-2.291 7.364-5.237 9.655-9.001 2.292-3.763 3.355-7.854 3.355-12.273v-14.155c-.9.737-2.373 1.391-4.5 2.046-2.128.654-4.419 1.145-7.037 1.636-2.619.491-5.155.9-7.692 1.227-2.537.328-4.746.655-6.628.901-4.173.572-8.019 1.472-11.292 2.781-3.355 1.31-5.973 3.11-7.855 5.401-1.964 2.291-2.864 5.318-2.864 8.918 0 5.237 1.882 9.164 5.728 11.782 3.682 2.782 8.51 4.091 14.401 4.091Zm64.643 18.328V71.839h27.412v19.965h1.227c2.21-6.955 5.974-12.274 11.292-16.038 5.319-3.763 11.456-5.645 18.329-5.645 1.555 0 3.355.082 5.237.163 1.964.164 3.601.328 4.91.573v25.938c-1.227-.41-3.109-.819-5.646-1.146a58.814 58.814 0 0 0-7.446-.49c-5.155 0-9.738 1.145-13.829 3.354-4.091 2.209-7.282 5.236-9.655 9.164-2.373 3.927-3.519 8.427-3.519 13.5v70.448h-28.312ZM222.077 39.192l-8.019 125.923L137.387 0l84.69 39.192Zm-53.105 162.825-57.933 33.056-57.934-33.056 11.783-28.556h92.301l11.783 28.556ZM111.039 62.675l30.357 73.803H80.681l30.358-73.803ZM7.937 165.115 0 39.192 84.69 0 7.937 165.115Z"
-          />
-          <path
-            fill="url(#c)"
-            d="M388.676 191.625h30.849L363.31 31.828h-35.758l-56.215 159.797h30.848l13.174-39.356h60.061l13.256 39.356Zm-65.461-62.675 21.602-64.311h1.227l21.602 64.311h-44.431Zm126.831-7.527v70.202h-28.23V71.839h27.002v20.374h1.392c2.782-6.71 7.2-12.028 13.255-15.956 6.056-3.927 13.584-5.89 22.503-5.89 8.264 0 15.465 1.8 21.684 5.318 6.137 3.518 10.964 8.673 14.319 15.382 3.437 6.71 5.074 14.81 4.992 24.383v76.175h-28.23v-71.92c0-8.019-2.046-14.237-6.219-18.819-4.173-4.5-9.819-6.791-17.102-6.791-4.91 0-9.328 1.063-13.174 3.272-3.846 2.128-6.792 5.237-9.001 9.328-2.046 4.009-3.191 8.918-3.191 14.728ZM589.233 239c-10.147 0-18.82-1.391-26.103-4.091-7.282-2.7-13.092-6.382-17.511-10.964-4.418-4.582-7.528-9.655-9.164-15.219l25.448-6.136c1.145 2.372 2.782 4.663 4.991 6.954 2.209 2.291 5.155 4.255 8.837 5.81 3.683 1.554 8.428 2.291 14.074 2.291 8.019 0 14.647-1.964 19.884-5.81 5.237-3.845 7.856-10.227 7.856-19.064v-22.665h-1.391c-1.473 2.946-3.601 5.892-6.383 9.001-2.782 3.109-6.464 5.645-10.965 7.691-4.582 2.046-10.228 3.109-17.101 3.109-9.165 0-17.511-2.209-25.039-6.545-7.446-4.337-13.42-10.883-17.757-19.474-4.418-8.673-6.628-19.473-6.628-32.565 0-13.091 2.21-24.301 6.628-33.383 4.419-9.082 10.311-15.955 17.839-20.7 7.528-4.746 15.874-7.037 25.039-7.037 7.037 0 12.846 1.145 17.347 3.518 4.582 2.373 8.182 5.236 10.883 8.51 2.7 3.272 4.746 6.382 6.137 9.327h1.554v-19.8h27.821v121.749c0 10.228-2.454 18.737-7.364 25.447-4.91 6.709-11.538 11.7-20.048 15.055-8.509 3.355-18.165 4.991-28.884 4.991Zm.245-71.266c5.974 0 11.047-1.473 15.302-4.337 4.173-2.945 7.446-7.118 9.573-12.519 2.21-5.482 3.274-12.027 3.274-19.637 0-7.609-1.064-14.155-3.274-19.8-2.127-5.646-5.318-10.064-9.491-13.255-4.174-3.11-9.329-4.746-15.384-4.746s-11.537 1.636-15.792 4.91c-4.173 3.272-7.365 7.772-9.492 13.418-2.128 5.727-3.191 12.191-3.191 19.392 0 7.2 1.063 13.745 3.273 19.228 2.127 5.482 5.318 9.736 9.573 12.764 4.174 3.027 9.41 4.582 15.629 4.582Zm141.56-26.51V71.839h28.23v119.786h-27.412v-21.273h-1.227c-2.7 6.709-7.119 12.191-13.338 16.446-6.137 4.255-13.747 6.382-22.748 6.382-7.855 0-14.81-1.718-20.783-5.237-5.974-3.518-10.72-8.591-14.075-15.382-3.355-6.709-5.073-14.891-5.073-24.464V71.839h28.312v71.921c0 7.609 2.046 13.664 6.219 18.083 4.173 4.5 9.655 6.709 16.365 6.709 4.173 0 8.183-.982 12.111-3.028 3.927-2.045 7.118-5.072 9.655-9.082 2.537-4.091 3.764-9.164 3.764-15.218Zm65.707-109.395v159.796h-28.23V31.828h28.23Zm44.841 162.169c-7.61 0-14.402-1.391-20.457-4.091-6.055-2.7-10.883-6.791-14.32-12.109-3.518-5.319-5.237-11.946-5.237-19.801 0-6.791 1.228-12.355 3.765-16.773 2.536-4.419 5.891-7.937 10.228-10.637 4.337-2.618 9.164-4.664 14.647-6.055 5.4-1.391 11.046-2.373 16.856-3.027 7.037-.737 12.683-1.391 17.102-1.964 4.337-.573 7.528-1.555 9.574-2.782 1.963-1.309 3.027-3.273 3.027-5.973v-.491c0-5.891-1.718-10.391-5.237-13.664-3.518-3.191-8.51-4.828-15.056-4.828-6.955 0-12.356 1.473-16.447 4.5-4.009 3.028-6.71 6.546-8.183 10.719l-26.348-3.764c2.046-7.282 5.483-13.336 10.31-18.328 4.746-4.909 10.638-8.59 17.511-11.045 6.955-2.455 14.565-3.682 22.912-3.682 5.809 0 11.537.654 17.265 2.045s10.965 3.6 15.711 6.71c4.746 3.109 8.51 7.282 11.455 12.6 2.864 5.318 4.337 11.946 4.337 19.883v80.184h-27.166v-16.446h-.9c-1.719 3.355-4.092 6.464-7.201 9.328-3.109 2.864-6.955 5.237-11.619 6.955-4.828 1.718-10.229 2.536-16.529 2.536Zm7.364-20.701c5.646 0 10.556-1.145 14.729-3.354 4.173-2.291 7.364-5.237 9.655-9.001 2.292-3.763 3.355-7.854 3.355-12.273v-14.155c-.9.737-2.373 1.391-4.5 2.046-2.128.654-4.419 1.145-7.037 1.636-2.619.491-5.155.9-7.692 1.227-2.537.328-4.746.655-6.628.901-4.173.572-8.019 1.472-11.292 2.781-3.355 1.31-5.973 3.11-7.855 5.401-1.964 2.291-2.864 5.318-2.864 8.918 0 5.237 1.882 9.164 5.728 11.782 3.682 2.782 8.51 4.091 14.401 4.091Zm64.643 18.328V71.839h27.412v19.965h1.227c2.21-6.955 5.974-12.274 11.292-16.038 5.319-3.763 11.456-5.645 18.329-5.645 1.555 0 3.355.082 5.237.163 1.964.164 3.601.328 4.91.573v25.938c-1.227-.41-3.109-.819-5.646-1.146a58.814 58.814 0 0 0-7.446-.49c-5.155 0-9.738 1.145-13.829 3.354-4.091 2.209-7.282 5.236-9.655 9.164-2.373 3.927-3.519 8.427-3.519 13.5v70.448h-28.312ZM222.077 39.192l-8.019 125.923L137.387 0l84.69 39.192Zm-53.105 162.825-57.933 33.056-57.934-33.056 11.783-28.556h92.301l11.783 28.556ZM111.039 62.675l30.357 73.803H80.681l30.358-73.803ZM7.937 165.115 0 39.192 84.69 0 7.937 165.115Z"
-          />
-        </g>
-        <defs>
-          <radialGradient
-            id="c"
-            cx="0"
-            cy="0"
-            r="1"
-            gradientTransform="rotate(118.122 171.182 60.81) scale(205.794)"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop stop-color="#FF41F8" />
-            <stop offset=".707" stop-color="#FF41F8" stop-opacity=".5" />
-            <stop offset="1" stop-color="#FF41F8" stop-opacity="0" />
-          </radialGradient>
-          <linearGradient
-            id="b"
-            x1="0"
-            x2="982"
-            y1="192"
-            y2="192"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop stop-color="#F0060B" />
-            <stop offset="0" stop-color="#F0070C" />
-            <stop offset=".526" stop-color="#CC26D5" />
-            <stop offset="1" stop-color="#7702FF" />
-          </linearGradient>
-          <clipPath id="a"><path fill="#fff" d="M0 0h982v239H0z" /></clipPath>
-        </defs>
-      </svg>
-      <h1>Hello, {{ title() }}</h1>
-      <p>Congratulations! Your app is running. 🎉</p>
-    </div>
-    <div class="divider" role="separator" aria-label="Divider"></div>
-    <div class="right-side">
-      <div class="pill-group">
-        @for (item of [
-          { title: 'Explore the Docs', link: 'https://angular.dev' },
-          { title: 'Learn with Tutorials', link: 'https://angular.dev/tutorials' },
-          { title: 'Prompt and best practices for AI', link: 'https://angular.dev/ai/develop-with-ai'},
-          { title: 'CLI Docs', link: 'https://angular.dev/tools/cli' },
-          { title: 'Angular Language Service', link: 'https://angular.dev/tools/language-service' },
-          { title: 'Angular DevTools', link: 'https://angular.dev/tools/devtools' },
-        ]; track item.title) {
-          <a
-            class="pill"
-            [href]="item.link"
-            target="_blank"
-            rel="noopener"
-          >
-            <span>{{ item.title }}</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="14"
-              viewBox="0 -960 960 960"
-              width="14"
-              fill="currentColor"
-            >
-              <path
-                d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z"
-              />
-            </svg>
-          </a>
+      <section class="page-body" [class.scratch-page]="activeView() === 'asignacion'">
+        @if (activeView() !== 'asignacion') {
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">GESTIÓN ACADÉMICA · FET HUILA</p>
+            <h1>{{ activeView() === 'aulas' ? 'Aulas' : activeView() === 'profesores' ? 'Profesores' : 'Materias y grupos' }}</h1>
+            <p class="page-description">{{ activeView() === 'aulas' ? 'Consulta y administra la capacidad instalada de los espacios.' : activeView() === 'profesores' ? 'Administra el directorio de profesores y sus códigos.' : 'Organiza las ofertas por período, asigna docentes y actualiza matrículas.' }}</p>
+          </div>
+          <div class="heading-actions">
+            @if (canManage()) {
+              <button class="primary-button create-button" type="button" (click)="activeView() === 'aulas' ? openNewAula() : activeView() === 'profesores' ? openNewProfesor() : openNewGrupo()">
+                <span aria-hidden="true">+</span> {{ activeView() === 'aulas' ? 'Agregar aula' : activeView() === 'profesores' ? 'Agregar profesor' : 'Agregar grupo' }}
+              </button>
+            }
+            <button class="refresh-button" [class.spinning]="loading()" type="button" (click)="refresh()" [disabled]="loading()">
+              <span aria-hidden="true">↻</span> Actualizar
+            </button>
+          </div>
+        </div>
         }
+
+        @if (activeView() === 'aulas') {
+        <section class="metrics" aria-label="Resumen del inventario">
+          <article class="metric metric-green">
+            <span class="metric-label">ESPACIOS EXISTENTES</span>
+            <strong>{{ aulasActivas() }}</strong>
+            <span class="metric-note">aulas y espacios activos</span>
+          </article>
+          <article class="metric metric-blue">
+            <span class="metric-label">CAPACIDAD REGISTRADA</span>
+            <strong>{{ sillasDisponibles() }}</strong>
+            <span class="metric-note">estimados según sillas registradas</span>
+          </article>
+          <article class="metric metric-amber">
+            <span class="metric-label">ESPACIOS ESPECIALES</span>
+            <strong>{{ espaciosEspeciales() }}</strong>
+            <span class="metric-note">laboratorios y auditorios</span>
+          </article>
+          <article class="metric metric-red">
+            <span class="metric-label">NO EXISTEN</span>
+            <strong>{{ aulasInexistentes() }}</strong>
+            <span class="metric-note">registros conservados</span>
+          </article>
+        </section>
+
+        <section class="inventory" aria-labelledby="inventory-title">
+          <div class="inventory-header">
+            <div>
+              <h2 id="inventory-title">Inventario</h2>
+              <p>{{ aulasVisibles().length }} registros visibles</p>
+            </div>
+            <div class="table-controls">
+              <label class="search-box">
+                <span aria-hidden="true">⌕</span>
+                <input type="search" placeholder="Buscar aula, bloque o tipo" aria-label="Buscar aula" [value]="search()" (input)="onSearch($event)">
+              </label>
+              <select aria-label="Filtrar por existencia" [value]="statusFilter()" (change)="onStatusChange($event)">
+                <option value="todas">Todos los estados</option>
+                <option value="existentes">Existentes</option>
+                <option value="inexistentes">No existen</option>
+              </select>
+              <select aria-label="Filtrar por bloque" [value]="blockFilter()" (change)="onBlockChange($event)">
+                <option value="todos">Todos los bloques</option>
+                <option value="Bloque 1">Bloque 1</option>
+                <option value="Bloque 2">Bloque 2</option>
+              </select>
+              @if (hasAulaFilters()) {
+                <button class="clear-filters" type="button" (click)="clearAulaFilters()">Limpiar filtros</button>
+              }
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th class="sortable" [class.sorted]="aulaSort().key === 'nombre'" [attr.aria-sort]="sortAria(aulaSort(), 'nombre')" (click)="sortAulas('nombre')">ESPACIO<span class="sort-mark">{{ sortMark(aulaSort(), 'nombre') }}</span></th>
+                  <th class="sortable" [class.sorted]="aulaSort().key === 'tipo'" [attr.aria-sort]="sortAria(aulaSort(), 'tipo')" (click)="sortAulas('tipo')">TIPO<span class="sort-mark">{{ sortMark(aulaSort(), 'tipo') }}</span></th>
+                  <th class="sortable" [class.sorted]="aulaSort().key === 'bloque'" [attr.aria-sort]="sortAria(aulaSort(), 'bloque')" (click)="sortAulas('bloque')">BLOQUE<span class="sort-mark">{{ sortMark(aulaSort(), 'bloque') }}</span></th>
+                  <th class="numeric sortable" [class.sorted]="aulaSort().key === 'sillas'" [attr.aria-sort]="sortAria(aulaSort(), 'sillas')" (click)="sortAulas('sillas')">SILLAS<span class="sort-mark">{{ sortMark(aulaSort(), 'sillas') }}</span></th>
+                  <th class="numeric sortable" [class.sorted]="aulaSort().key === 'mesas'" [attr.aria-sort]="sortAria(aulaSort(), 'mesas')" (click)="sortAulas('mesas')">MESAS<span class="sort-mark">{{ sortMark(aulaSort(), 'mesas') }}</span></th>
+                  <th class="numeric sortable" [class.sorted]="aulaSort().key === 'capacidad'" [attr.aria-sort]="sortAria(aulaSort(), 'capacidad')" (click)="sortAulas('capacidad')">CAPACIDAD<span class="sort-mark">{{ sortMark(aulaSort(), 'capacidad') }}</span></th>
+                  <th class="sortable" [class.sorted]="aulaSort().key === 'area'" [attr.aria-sort]="sortAria(aulaSort(), 'area')" (click)="sortAulas('area')">ÁREA<span class="sort-mark">{{ sortMark(aulaSort(), 'area') }}</span></th>
+                  <th>OBSERVACIÓN</th>
+                  <th class="sortable" [class.sorted]="aulaSort().key === 'existe'" [attr.aria-sort]="sortAria(aulaSort(), 'existe')" (click)="sortAulas('existe')">ESTADO<span class="sort-mark">{{ sortMark(aulaSort(), 'existe') }}</span></th>
+                  @if (canManage()) { <th>ACCIONES</th> }
+                </tr>
+              </thead>
+              <tbody>
+                @for (aula of aulasVisibles(); track aula.id) {
+                  <tr>
+                    <td><strong class="room-name">{{ aula.nombre }}</strong></td>
+                    <td><span class="type-label">{{ aula.tipo | titlecase }}</span></td>
+                    <td>{{ aula.bloque || '—' }}</td>
+                    <td class="numeric">{{ aula.sillas ?? '—' }}</td>
+                    <td class="numeric">
+                      @if (aula.mesas !== null) {
+                        {{ aula.mesas }}
+                      } @else if (aula.mesas_aplicables === false) {
+                        No aplica
+                      } @else {
+                        —
+                      }
+                    </td>
+                    <td class="numeric capacity-value">{{ aula.capacidad ?? 'Por definir' }}</td>
+                    <td>{{ aula.area_m2 ? aula.area_m2 + ' m²' : '—' }}</td>
+                    <td>{{ aula.observacion || '—' }}</td>
+                    <td>
+                      <span class="status-pill" [class.status-offline]="!aula.existe">
+                        <span></span>{{ aula.existe ? 'Existente' : 'No existe' }}
+                      </span>
+                    </td>
+                    @if (canManage()) {
+                      <td class="row-actions">
+                        <button class="icon-button" type="button" [attr.aria-label]="'Editar ' + aula.nombre" title="Editar aula" (click)="editAula(aula)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                        <button class="icon-button danger-action" type="button" [attr.aria-label]="'Eliminar ' + aula.nombre" title="Eliminar aula" (click)="deleteAula(aula)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+                      </td>
+                    }
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td [attr.colspan]="canManage() ? 10 : 9" class="empty-cell">
+                      @if (loading()) {
+                        <span class="loading-mark"></span><strong>Cargando inventario</strong>
+                        <span>Consultando los datos del servidor.</span>
+                      } @else if (aulas().length === 0) {
+                        <strong>El inventario está vacío</strong>
+                        <span>Cuando se registren aulas aparecerán aquí.</span>
+                      } @else {
+                        <strong>No hay resultados</strong>
+                        <span>Cambia el término de búsqueda o los filtros.</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <footer class="table-footer">
+            <span>Datos consultados desde el inventario institucional</span>
+            <span><i class="status-dot" [class.offline]="!apiConnected()" [class.pending]="loading()"></i>
+              {{ loading() ? 'Consultando API' : apiConnected() ? 'API conectada' : 'API sin conexión' }}
+            </span>
+          </footer>
+        </section>
+        } @else if (activeView() === 'profesores') {
+          <section class="inventory" aria-labelledby="profesores-title">
+            <div class="inventory-header">
+              <div>
+                <h2 id="profesores-title">Directorio de profesores</h2>
+                <p>{{ profesoresVisibles().length }} profesores visibles</p>
+              </div>
+              <div class="table-controls people-controls">
+                <label class="search-box">
+                  <span aria-hidden="true">⌕</span>
+                  <input type="search" placeholder="Buscar por código, nombre, programa o materia" aria-label="Buscar profesor" [value]="peopleSearch()" (input)="onPeopleSearch($event)">
+                </label>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="sortable" [class.sorted]="profesorSort().key === 'codigo'" [attr.aria-sort]="sortAria(profesorSort(), 'codigo')" (click)="sortProfesores('codigo')">CÓDIGO<span class="sort-mark">{{ sortMark(profesorSort(), 'codigo') }}</span></th>
+                    <th class="sortable" [class.sorted]="profesorSort().key === 'nombre'" [attr.aria-sort]="sortAria(profesorSort(), 'nombre')" (click)="sortProfesores('nombre')">NOMBRE<span class="sort-mark">{{ sortMark(profesorSort(), 'nombre') }}</span></th>
+                    <th class="sortable" [class.sorted]="profesorSort().key === 'programas'" [attr.aria-sort]="sortAria(profesorSort(), 'programas')" (click)="sortProfesores('programas')">PROGRAMAS<span class="sort-mark">{{ sortMark(profesorSort(), 'programas') }}</span></th>
+                    <th class="sortable" [class.sorted]="profesorSort().key === 'materia'" [attr.aria-sort]="sortAria(profesorSort(), 'materia')" (click)="sortProfesores('materia')">MATERIAS<span class="sort-mark">{{ sortMark(profesorSort(), 'materia') }}</span></th>
+                    @if (canManage()) { <th>ACCIONES</th> }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (profesor of profesoresVisibles(); track profesor.id) {
+                    <tr>
+                      <td><span class="identifier-value">{{ profesor.codigo || 'Sin código' }}</span></td>
+                      <td><strong class="room-name">{{ profesor.nombre }}</strong></td>
+                      <td>{{ profesor.programas_nombres.length ? profesor.programas_nombres.join(', ') : 'Sin programa' }}</td>
+                      <td>{{ profesor.materias_nombres.length ? profesor.materias_nombres.join(', ') : '—' }}</td>
+                      @if (canManage()) {
+                        <td class="row-actions">
+                          <button class="icon-button" type="button" [attr.aria-label]="'Editar ' + profesor.nombre" title="Editar profesor" (click)="editProfesor(profesor)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                          <button class="icon-button danger-action" type="button" [attr.aria-label]="'Eliminar ' + profesor.nombre" title="Eliminar profesor" (click)="deleteProfesor(profesor)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+                        </td>
+                      }
+                    </tr>
+                  } @empty {
+                    <tr><td [attr.colspan]="canManage() ? 5 : 4" class="empty-cell">
+                      <strong>{{ profesores().length ? 'No hay resultados' : 'Aún no hay profesores' }}</strong>
+                      <span>{{ profesores().length ? 'Prueba con otro término de búsqueda.' : 'Agrega profesores para comenzar el directorio.' }}</span>
+                    </td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <footer class="table-footer">
+              <span>El código es opcional y admite hasta 20 letras o números</span>
+              <span>{{ profesores().length }} registros</span>
+            </footer>
+          </section>
+        } @else if (activeView() === 'ofertas') {
+          <section class="offer-layout">
+            <section class="inventory" aria-labelledby="groups-title">
+              <div class="inventory-header">
+                <div>
+                  <h2 id="groups-title">Ofertas por período</h2>
+                  <p>{{ grupos().length }} grupos · {{ materias().length }} materias</p>
+                </div>
+                @if (canManage()) {
+                  <button class="secondary-button" type="button" (click)="openNewMateria()">+ Nueva materia</button>
+                }
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>MATERIA</th><th>PERÍODO</th><th>MODALIDAD</th><th>PROFESOR</th><th class="numeric">MATRÍCULA</th><th>HORA Y DÍA</th>@if (canManage()) { <th>ACCIONES</th> }</tr></thead>
+                  <tbody>
+                    @for (grupo of gruposOrdenados(); track grupo.id) {
+                      <tr>
+                        <td><strong class="room-name">{{ grupo.materia_nombre }}</strong><small class="code-subline">{{ grupo.materia_codigo }} · Grupo {{ grupo.codigo }}</small></td>
+                        <td>{{ grupo.periodo_codigo }}</td>
+                        <td><span class="status-pill" [class.status-virtual]="grupo.modalidad === 'VIRTUAL'"><span></span>{{ grupo.modalidad === 'VIRTUAL' ? 'Virtual' : 'Presencial' }}</span></td>
+                        <td>{{ grupo.profesor_nombre || 'Sin asignar' }}<small class="code-subline">{{ grupo.profesor_codigo || '' }}</small></td>
+                        <td class="numeric"><strong class="enrollment-value">{{ grupo.estudiantes_matriculados }}</strong></td>
+                        <td>
+                          @for (h of grupo.horarios; track h.id) {
+                            <span class="schedule-chip"><b>{{ diaCorto(h.dia) }}</b> {{ hora(h.hora_inicio) }}–{{ hora(h.hora_fin) }}</span>
+                          } @empty { <span class="muted-text">Sin horario</span> }
+                        </td>
+                        @if (canManage()) {
+                          <td class="row-actions"><span class="enrollment-control"><button class="step-button" type="button" [disabled]="grupo.estudiantes_matriculados <= 0 || ajustando().has(grupo.id)" [attr.aria-label]="'Quitar un estudiante de ' + grupo.materia_nombre" title="Quitar un estudiante" (click)="adjustEnrollment(grupo, -1)">−</button><button class="step-button" type="button" [disabled]="grupo.estudiantes_matriculados >= 150 || ajustando().has(grupo.id)" [attr.aria-label]="'Agregar un estudiante a ' + grupo.materia_nombre" title="Agregar un estudiante" (click)="adjustEnrollment(grupo, 1)">+</button></span><button class="icon-button" type="button" [attr.aria-label]="'Editar oferta ' + grupo.materia_nombre" title="Editar grupo y profesor" (click)="editGrupo(grupo)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button class="icon-button danger-action" type="button" [attr.aria-label]="'Eliminar grupo ' + grupo.codigo" title="Eliminar grupo" (click)="deleteGrupo(grupo)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></td>
+                        }
+                      </tr>
+                    } @empty {
+                      <tr><td [attr.colspan]="canManage() ? 7 : 6" class="empty-cell"><strong>No hay ofertas registradas</strong><span>Crea una materia y luego su grupo para empezar a registrar estudiantes.</span></td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <footer class="table-footer"><span>La matrícula se guarda por grupo y período. Los cambios de profesor no alteran el conteo.</span><span>{{ grupos().length }} ofertas</span></footer>
+            </section>
+
+            @if (canManage()) {
+              <section class="inventory subjects-inventory" aria-labelledby="subjects-title">
+                <div class="inventory-header"><div><h2 id="subjects-title">Catálogo de materias</h2><p>Materia como entidad independiente de sus ofertas por semestre</p></div></div>
+                <div class="subject-list">
+                  @for (materia of materias(); track materia.id) {
+                    <div class="subject-row"><div><strong>{{ materia.nombre }}</strong><small>{{ materia.codigo }}</small></div><div class="row-actions"><button class="icon-button" type="button" [attr.aria-label]="'Editar materia ' + materia.nombre" (click)="editMateria(materia)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button class="icon-button danger-action" type="button" [attr.aria-label]="'Eliminar materia ' + materia.nombre" (click)="deleteMateria(materia)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div></div>
+                  } @empty { <p class="subject-empty">Todavía no hay materias.</p> }
+                </div>
+              </section>
+            }
+          </section>
+        } @else if (activeView() === 'asignacion') {
+          <div class="assign-layout">
+            <div class="assign-workspace">
+              <div class="assign-surface" [class.dragging]="dragging()"
+                [style.background-position]="pan().x + 'px ' + pan().y + 'px'"
+                (pointerdown)="startDrag($event)">
+                <div class="assign-world" [style.transform]="'translate(' + pan().x + 'px, ' + pan().y + 'px)'">
+                  <svg class="assign-cables" aria-hidden="true">
+                    @for (cable of espacio().cables; track cable.key) {
+                      <path [attr.d]="cable.d" [attr.stroke]="cable.color" />
+                    }
+                  </svg>
+
+                  @for (g of espacio().grupos; track g.key) {
+                    <div class="blk blk-group"
+                      [class.blk-virtual]="g.grupo.modalidad === 'VIRTUAL'"
+                      [class.blk-nosched]="g.grupo.modalidad === 'PRESENCIAL' && !g.horario"
+                      [style.left.px]="g.x" [style.top.px]="g.y" [style.--blk]="g.color"
+                      (pointerdown)="startDrag($event, g.key)">
+                      <span class="blk-tag">{{ g.grupo.codigo }}
+                        @if (g.horario) { · {{ diaCorto(g.horario.dia) }} {{ hora(g.horario.hora_inicio) }}–{{ hora(g.horario.hora_fin) }} }
+                        @if (g.programas) { · {{ g.programas }} }</span>
+                      <strong>{{ g.grupo.materia_nombre }}</strong>
+                      <small>
+                        @if (g.grupo.modalidad === 'VIRTUAL') { Virtual · sin salón }
+                        @else if (!g.horario) { Sin horario · agrégalo en Materias y grupos }
+                        @else { {{ g.grupo.estudiantes_matriculados }} est. · {{ g.grupo.profesor_nombre }} }
+                      </small>
+                      @if (g.horario) { <span class="blk-port blk-port-out"></span> }
+                    </div>
+                  }
+
+                  @for (r of espacio().salones; track r.key) {
+                    <div class="blk blk-room" [class.blk-empty]="!r.nombre" [class.blk-clickable]="canManage()"
+                      [class.blk-problem]="r.horario.aula_problema"
+                      [style.left.px]="r.x" [style.top.px]="r.y" (pointerdown)="startDrag($event, r.key)"
+                      [attr.title]="r.horario.aula_problema || (canManage() ? 'Clic para cambiar el salón' : null)">
+                      @if (r.nombre) {
+                        <span class="blk-tag">{{ r.aula ? (r.aula.tipo | titlecase) : 'Salón' }}
+                          @if (r.horario.aula_fijada) { · 📌 fijado a mano } @else { · automático }</span>
+                        <strong>{{ r.nombre }}</strong>
+                        <small>
+                          @if (r.horario.aula_problema) { ⚠ {{ r.horario.aula_problema }} }
+                          @else { Cap. {{ r.aula?.capacidad ?? '—' }} · {{ r.aula?.bloque || 'Sin bloque' }} }
+                        </small>
+                      } @else {
+                        <span class="blk-tag">Sin salón</span>
+                        <strong>Ningún salón libre</strong>
+                        <small>{{ canManage() ? 'Clic para elegir uno' : 'No hay salón disponible' }}</small>
+                      }
+                      <span class="blk-port blk-port-in"></span>
+                    </div>
+                  }
+                </div>
+
+                @if (espacio().grupos.length === 0) {
+                  <p class="assign-empty">No hay grupos para mostrar{{ programaFiltro() !== null ? ' en este programa' : '' }}.</p>
+                }
+              </div>
+
+              <div class="assign-toolbar">
+                <label class="assign-filter">
+                  <span>Programa</span>
+                  <select [value]="programaFiltro() ?? ''" (change)="onProgramaFiltro($event)">
+                    <option value="">Todos los programas</option>
+                    @for (programa of programas(); track programa.id) {
+                      <option [value]="programa.id">{{ programa.nombre }}</option>
+                    }
+                  </select>
+                </label>
+                <div class="assign-stats" aria-live="polite">
+                  <span class="stat stat-ok">{{ resumenAsignacion().asignados }} asignados</span>
+                  @if (resumenAsignacion().sinSalon > 0) { <span class="stat stat-warn">{{ resumenAsignacion().sinSalon }} sin salón</span> }
+                  <span class="stat">{{ resumenAsignacion().virtuales }} virtuales</span>
+                </div>
+              </div>
+
+              <div class="assign-actions">
+                <span class="assign-hint">Arrastra los bloques o el fondo</span>
+                <button class="secondary-button" type="button" (click)="resetLayout()">Reordenar</button>
+              </div>
+            </div>
+
+            <aside class="program-panel" aria-label="Grupos por programa académico">
+              <header class="program-panel-header">
+                <p class="eyebrow">DISTRIBUCIÓN POR CARRERA</p>
+                <h3>Por programa académico</h3>
+              </header>
+              <div class="program-list">
+                @for (entry of gruposPorPrograma(); track entry.programa) {
+                  <section class="program-block" [style.--blk]="entry.color">
+                    <h4 class="program-title"><span class="program-dot"></span>{{ entry.programa }}<em>{{ entry.grupos.length }}</em></h4>
+                    @for (grupo of entry.grupos; track grupo.id) {
+                      @let salones = resumenSalones(grupo);
+                      <div class="program-row">
+                        <div class="program-row-info">
+                          <strong>{{ grupo.materia_nombre }}</strong>
+                          <small>Grupo {{ grupo.codigo }} · {{ grupo.profesor_nombre }}</small>
+                        </div>
+                        <div class="program-row-room">
+                          @if (grupo.modalidad === 'VIRTUAL') {
+                            <span class="room-badge room-badge-virtual">Virtual</span>
+                          } @else if (salones.total === 0 || salones.sinSalon === salones.total) {
+                            <span class="room-badge room-badge-warn">Sin salón</span>
+                          } @else {
+                            @for (nombre of salones.nombres; track nombre) { <span class="room-badge">{{ nombre }}</span> }
+                            @if (salones.sinSalon > 0) { <span class="room-badge room-badge-warn">Falta salón en {{ salones.sinSalon }}</span> }
+                          }
+                          <small>{{ grupo.estudiantes_matriculados }} est.</small>
+                        </div>
+                      </div>
+                    }
+                  </section>
+                } @empty {
+                  <p class="board-empty">No hay grupos para mostrar.</p>
+                }
+              </div>
+            </aside>
+          </div>
+        }
+      </section>
+    </main>
+
+    @if (aulaEditorOpen()) {
+      <div class="dialog-backdrop" (click)="aulaEditorOpen.set(false)">
+        <section class="editor-dialog" role="dialog" aria-modal="true" aria-labelledby="aula-dialog-title" (click)="$event.stopPropagation()">
+          <header class="dialog-header">
+            <div><p class="eyebrow">INVENTARIO · AULAS</p><h2 id="aula-dialog-title">{{ editingAulaId === null ? 'Agregar aula' : 'Editar aula' }}</h2></div>
+            <button class="dialog-close" type="button" aria-label="Cerrar" (click)="aulaEditorOpen.set(false)">×</button>
+          </header>
+          <form class="editor-form" (ngSubmit)="saveAula()">
+            <div class="form-grid">
+              <label>Nombre del espacio<input name="aulaNombre" [(ngModel)]="aulaDraft.nombre" required maxlength="100"></label>
+              <label>Bloque<select name="aulaBloque" [(ngModel)]="aulaDraft.bloque"><option value="">Sin bloque</option><option>Bloque 1</option><option>Bloque 2</option></select></label>
+              <label>Tipo<select name="aulaTipo" [(ngModel)]="aulaDraft.tipo"><option value="AULA">Aula</option><option value="LABORATORIO">Laboratorio</option><option value="AUDITORIO">Auditorio</option><option value="OTRO">Otro</option></select></label>
+              <label>Espacio por silla (m²)<input name="espacioPorSilla" type="number" min="0" step="0.01" [(ngModel)]="aulaDraft.espacio_por_silla"></label>
+              <label>Sillas<input name="aulaSillas" type="number" min="0" step="1" [(ngModel)]="aulaDraft.sillas"></label>
+              <label>Mesas<input name="aulaMesas" type="number" min="0" step="1" [(ngModel)]="aulaDraft.mesas"></label>
+              <label>¿Las mesas aplican?<select name="aulaMesasAplicables" [value]="aulaDraft.mesas_aplicables === null ? '' : aulaDraft.mesas_aplicables ? 'si' : 'no'" (change)="onTablesApplicability($event)"><option value="">Sin dato</option><option value="si">Sí</option><option value="no">No aplica</option></select></label>
+              <label>Capacidad manual<input name="capacidadManual" type="number" min="0" step="1" [(ngModel)]="aulaDraft.capacidad_manual"></label>
+            </div>
+            <fieldset class="section-editor">
+              <legend>Secciones y dimensiones</legend>
+              @for (section of aulaDraft.secciones; track $index) {
+                <div class="section-row">
+                  <span>Sección {{ $index + 1 }}</span>
+                  <label>Largo (m)<input [name]="'largo' + $index" type="number" min="0.01" step="0.01" [(ngModel)]="section.largo_m"></label>
+                  <label>Ancho (m)<input [name]="'ancho' + $index" type="number" min="0.01" step="0.01" [(ngModel)]="section.ancho_m"></label>
+                  <button class="icon-button danger-action" type="button" [disabled]="aulaDraft.secciones.length === 1" [attr.aria-label]="'Quitar sección ' + ($index + 1)" (click)="removeAulaSection($index)">×</button>
+                </div>
+              }
+              <button class="secondary-button" type="button" (click)="addAulaSection()">+ Agregar sección</button>
+            </fieldset>
+            <label class="wide-field">Observación<textarea name="aulaObservacion" rows="2" [(ngModel)]="aulaDraft.observacion"></textarea></label>
+            <label class="check-field"><input name="aulaExiste" type="checkbox" [(ngModel)]="aulaDraft.existe"> El espacio existe y está disponible</label>
+            <p class="form-hint">La capacidad se calcula desde las sillas; si indicas capacidad manual, esta tendrá prioridad.</p>
+            @if (dialogError()) { <p class="dialog-error" role="alert">{{ dialogError() }}</p> }
+            <footer class="dialog-actions"><button class="secondary-button" type="button" (click)="aulaEditorOpen.set(false)">Cancelar</button><button class="primary-button" type="submit" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar aula' }}</button></footer>
+          </form>
+        </section>
       </div>
-      <div class="social-links">
-        <a
-          href="https://github.com/angular/angular"
-          aria-label="Github"
-          target="_blank"
-          rel="noopener"
-        >
-          <svg
-            width="25"
-            height="24"
-            viewBox="0 0 25 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            alt="Github"
-          >
-            <path
-              d="M12.3047 0C5.50634 0 0 5.50942 0 12.3047C0 17.7423 3.52529 22.3535 8.41332 23.9787C9.02856 24.0946 9.25414 23.7142 9.25414 23.3871C9.25414 23.0949 9.24389 22.3207 9.23876 21.2953C5.81601 22.0377 5.09414 19.6444 5.09414 19.6444C4.53427 18.2243 3.72524 17.8449 3.72524 17.8449C2.61064 17.082 3.81137 17.0973 3.81137 17.0973C5.04697 17.1835 5.69604 18.3647 5.69604 18.3647C6.79321 20.2463 8.57636 19.7029 9.27978 19.3881C9.39052 18.5924 9.70736 18.0499 10.0591 17.7423C7.32641 17.4347 4.45429 16.3765 4.45429 11.6618C4.45429 10.3185 4.9311 9.22133 5.72065 8.36C5.58222 8.04931 5.16694 6.79833 5.82831 5.10337C5.82831 5.10337 6.85883 4.77319 9.2121 6.36459C10.1965 6.09082 11.2424 5.95546 12.2883 5.94931C13.3342 5.95546 14.3801 6.09082 15.3644 6.36459C17.7023 4.77319 18.7328 5.10337 18.7328 5.10337C19.3942 6.79833 18.9789 8.04931 18.8559 8.36C19.6403 9.22133 20.1171 10.3185 20.1171 11.6618C20.1171 16.3888 17.2409 17.4296 14.5031 17.7321C14.9338 18.1012 15.3337 18.8559 15.3337 20.0084C15.3337 21.6552 15.3183 22.978 15.3183 23.3779C15.3183 23.7009 15.5336 24.0854 16.1642 23.9623C21.0871 22.3484 24.6094 17.7341 24.6094 12.3047C24.6094 5.50942 19.0999 0 12.3047 0Z"
-            />
-          </svg>
-        </a>
-        <a
-          href="https://x.com/angular"
-          aria-label="X"
-          target="_blank"
-          rel="noopener"
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            alt="X"
-          >
-            <path
-              d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
-            />
-          </svg>
-        </a>
-        <a
-          href="https://www.youtube.com/channel/UCbn1OgGei-DV7aSRo_HaAiw"
-          aria-label="Youtube"
-          target="_blank"
-          rel="noopener"
-        >
-          <svg
-            width="29"
-            height="20"
-            viewBox="0 0 29 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            alt="Youtube"
-          >
-            <path
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M27.4896 1.52422C27.9301 1.96749 28.2463 2.51866 28.4068 3.12258C29.0004 5.35161 29.0004 10 29.0004 10C29.0004 10 29.0004 14.6484 28.4068 16.8774C28.2463 17.4813 27.9301 18.0325 27.4896 18.4758C27.0492 18.9191 26.5 19.2389 25.8972 19.4032C23.6778 20 14.8068 20 14.8068 20C14.8068 20 5.93586 20 3.71651 19.4032C3.11363 19.2389 2.56449 18.9191 2.12405 18.4758C1.68361 18.0325 1.36732 17.4813 1.20683 16.8774C0.613281 14.6484 0.613281 10 0.613281 10C0.613281 10 0.613281 5.35161 1.20683 3.12258C1.36732 2.51866 1.68361 1.96749 2.12405 1.52422C2.56449 1.08095 3.11363 0.76113 3.71651 0.596774C5.93586 0 14.8068 0 14.8068 0C14.8068 0 23.6778 0 25.8972 0.596774C26.5 0.76113 27.0492 1.08095 27.4896 1.52422ZM19.3229 10L11.9036 5.77905V14.221L19.3229 10Z"
-            />
-          </svg>
-        </a>
+    }
+
+    @if (profesorEditorOpen()) {
+      <div class="dialog-backdrop" (click)="profesorEditorOpen.set(false)">
+        <section class="editor-dialog compact-dialog" role="dialog" aria-modal="true" aria-labelledby="profesor-dialog-title" (click)="$event.stopPropagation()">
+          <header class="dialog-header">
+            <div><p class="eyebrow">DIRECTORIO · PROFESORES</p><h2 id="profesor-dialog-title">{{ editingProfesorId === null ? 'Agregar profesor' : 'Editar profesor' }}</h2></div>
+            <button class="dialog-close" type="button" aria-label="Cerrar" (click)="profesorEditorOpen.set(false)">×</button>
+          </header>
+          <form class="editor-form" (ngSubmit)="saveProfesor()">
+            <label>Nombre completo<input name="profesorNombre" [(ngModel)]="profesorDraft.nombre" required maxlength="150"></label>
+            <label>Código (opcional)<input name="profesorCodigo" [(ngModel)]="profesorDraft.codigo" maxlength="20" pattern="[A-Za-z0-9]*" autocomplete="off"><span class="field-hint">Hasta 20 letras o números. Se guarda en mayúsculas.</span></label>
+            <fieldset class="program-picker"><legend>Programas</legend>
+              @for (programa of programas(); track programa.id) {
+                <label class="check-field"><input type="checkbox" [checked]="profesorDraft.programas.includes(programa.id)" (change)="toggleProfesorPrograma(programa.id, $event)">{{ programa.nombre }}</label>
+              } @empty { <span class="field-hint">No hay programas registrados. Créelos desde el admin de Django.</span> }
+            </fieldset>
+            <fieldset class="program-picker"><legend>Materias que dicta</legend>
+              @for (materia of materias(); track materia.id) {
+                <label class="check-field"><input type="checkbox" [checked]="profesorDraft.materias.includes(materia.id)" (change)="toggleProfesorMateria(materia.id, $event)">{{ materia.nombre }}</label>
+              } @empty { <span class="field-hint">No hay materias en el catálogo. Créalas en "Materias y grupos".</span> }
+            </fieldset>
+            @if (dialogError()) { <p class="dialog-error" role="alert">{{ dialogError() }}</p> }
+            <footer class="dialog-actions"><button class="secondary-button" type="button" (click)="profesorEditorOpen.set(false)">Cancelar</button><button class="primary-button" type="submit" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar profesor' }}</button></footer>
+          </form>
+        </section>
       </div>
+    }
+
+    @if (grupoEditorOpen()) {
+      <div class="dialog-backdrop" (click)="grupoEditorOpen.set(false)">
+        <section class="editor-dialog compact-dialog" role="dialog" aria-modal="true" aria-labelledby="grupo-dialog-title" (click)="$event.stopPropagation()">
+          <header class="dialog-header"><div><p class="eyebrow">OFERTA ACADÉMICA</p><h2 id="grupo-dialog-title">{{ editingGrupoId === null ? 'Agregar grupo' : 'Editar grupo' }}</h2></div><button class="dialog-close" type="button" aria-label="Cerrar" (click)="grupoEditorOpen.set(false)">×</button></header>
+          <form class="editor-form" (ngSubmit)="saveGrupo()">
+            <label>Materia<select name="grupoMateria" [(ngModel)]="grupoDraft.materia" required><option [ngValue]="null" disabled>Selecciona una materia</option>@for (materia of materias(); track materia.id) { <option [ngValue]="materia.id">{{ materia.nombre }}</option> }</select></label>
+            <label>Período<select name="grupoPeriodo" [(ngModel)]="grupoDraft.periodo" required><option [ngValue]="null" disabled>Selecciona un período</option>@for (periodo of periodos(); track periodo.id) { <option [ngValue]="periodo.id">{{ periodo.codigo }}</option> }</select></label>
+            <label>Código del grupo<input name="grupoCodigo" [(ngModel)]="grupoDraft.codigo" maxlength="30" required placeholder="Ej. 01"></label>
+            <label>Modalidad<select name="grupoModalidad" [(ngModel)]="grupoDraft.modalidad"><option value="PRESENCIAL">Presencial</option><option value="VIRTUAL">Virtual · sin salón</option></select></label>
+            <label>Profesor asignado
+              <select name="grupoProfesor" [(ngModel)]="grupoDraft.profesor" required>
+                <option [ngValue]="null" disabled>Selecciona un profesor</option>
+                @let opciones = profesoresParaMateria(grupoDraft.materia);
+                @if (opciones.preferidos.length) {
+                  <optgroup label="Dictan esta materia">
+                    @for (profesor of opciones.preferidos; track profesor.id) { <option [ngValue]="profesor.id">{{ profesor.nombre }}{{ profesor.codigo ? ' · ' + profesor.codigo : '' }}</option> }
+                  </optgroup>
+                  <optgroup label="Otros profesores">
+                    @for (profesor of opciones.otros; track profesor.id) { <option [ngValue]="profesor.id">{{ profesor.nombre }}{{ profesor.codigo ? ' · ' + profesor.codigo : '' }}</option> }
+                  </optgroup>
+                } @else {
+                  @for (profesor of opciones.otros; track profesor.id) { <option [ngValue]="profesor.id">{{ profesor.nombre }}{{ profesor.codigo ? ' · ' + profesor.codigo : '' }}</option> }
+                }
+              </select>
+              <span class="field-hint">El profesor es obligatorio. Puedes reasignarlo durante el semestre.</span>
+            </label>
+            <label>Estudiantes matriculados<input name="grupoAlumnos" type="number" min="0" max="150" step="1" [(ngModel)]="grupoDraft.estudiantes_matriculados"></label>
+            <fieldset class="section-editor">
+              <legend>Hora y día</legend>
+              @for (h of grupoDraft.horarios; track $index) {
+                <div class="schedule-row">
+                  <label>Día<select [name]="'hDia' + $index" [(ngModel)]="h.dia">@for (d of dias; track d.value) { <option [value]="d.value">{{ d.label }}</option> }</select></label>
+                  <label>Inicio<input [name]="'hIni' + $index" type="time" min="06:00" max="21:30" [(ngModel)]="h.hora_inicio" required></label>
+                  <label>Fin<input [name]="'hFin' + $index" type="time" min="06:30" max="22:00" [(ngModel)]="h.hora_fin" required></label>
+                  <button class="icon-button danger-action" type="button" [attr.aria-label]="'Quitar horario ' + ($index + 1)" (click)="removeHorario($index)">×</button>
+                </div>
+              } @empty { <span class="field-hint">Sin horarios. Agrega al menos un día y hora.</span> }
+              <button class="secondary-button" type="button" (click)="addHorario()">+ Agregar horario</button>
+            </fieldset>
+            <p class="form-hint">El salón se asigna después. Si la matrícula supera el aula más grande, te preguntaremos si pasar los sobrantes a otro grupo de la misma materia. Horario entre 06:00 y 22:00, bloques de 30 min a 6 h; un profesor no puede tener dos clases a la misma hora.</p>
+            @if (dialogError()) { <p class="dialog-error" role="alert">{{ dialogError() }}</p> }
+            <footer class="dialog-actions"><button class="secondary-button" type="button" (click)="grupoEditorOpen.set(false)">Cancelar</button><button class="primary-button" type="submit" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar grupo' }}</button></footer>
+          </form>
+        </section>
+      </div>
+    }
+
+    @if (materiaEditorOpen()) {
+      <div class="dialog-backdrop" (click)="materiaEditorOpen.set(false)">
+        <section class="editor-dialog compact-dialog" role="dialog" aria-modal="true" aria-labelledby="materia-dialog-title" (click)="$event.stopPropagation()">
+          <header class="dialog-header"><div><p class="eyebrow">CATÁLOGO ACADÉMICO</p><h2 id="materia-dialog-title">{{ editingMateriaId === null ? 'Agregar materia' : 'Editar materia' }}</h2></div><button class="dialog-close" type="button" aria-label="Cerrar" (click)="materiaEditorOpen.set(false)">×</button></header>
+          <form class="editor-form" (ngSubmit)="saveMateria()"><label>Código<input name="materiaCodigo" [(ngModel)]="materiaDraft.codigo" required maxlength="30"></label><label>Nombre<input name="materiaNombre" [(ngModel)]="materiaDraft.nombre" required maxlength="150"></label>@if (dialogError()) { <p class="dialog-error" role="alert">{{ dialogError() }}</p> }
+            <footer class="dialog-actions"><button class="secondary-button" type="button" (click)="materiaEditorOpen.set(false)">Cancelar</button><button class="primary-button" type="submit" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar materia' }}</button></footer></form>
+        </section>
+      </div>
+    }
+
+    @if (selector(); as sel) {
+      <div class="dialog-backdrop" (click)="selector.set(null)">
+        <section class="editor-dialog compact-dialog" role="dialog" aria-modal="true" aria-labelledby="selector-title" (click)="$event.stopPropagation()">
+          <header class="dialog-header">
+            <div>
+              <p class="eyebrow">{{ sel.grupo.materia_nombre }} · grupo {{ sel.grupo.codigo }}</p>
+              <h2 id="selector-title">Elegir salón</h2>
+              <p class="selector-sub">{{ diaCorto(sel.horario.dia) }} {{ hora(sel.horario.hora_inicio) }}–{{ hora(sel.horario.hora_fin) }} · {{ sel.grupo.estudiantes_matriculados }} estudiantes</p>
+            </div>
+            <button class="dialog-close" type="button" aria-label="Cerrar" (click)="selector.set(null)">×</button>
+          </header>
+          <div class="selector-body">
+            @if (sel.opciones === null) {
+              <p class="selector-loading"><span class="loading-mark"></span>Buscando salones libres…</p>
+            } @else {
+              <ul class="selector-list">
+                @for (opcion of sel.opciones; track opcion.id) {
+                  <li>
+                    <button type="button" class="selector-option" [class.current]="opcion.actual" [disabled]="!opcion.disponible" (click)="chooseAula(opcion)">
+                      <span class="selector-main">
+                        <strong>{{ opcion.nombre }}</strong>
+                        <small>{{ opcion.tipo | titlecase }} · {{ opcion.bloque || 'Sin bloque' }} · {{ opcion.capacidad === null ? 'capacidad sin registrar' : 'cap. ' + opcion.capacidad }}</small>
+                      </span>
+                      @if (opcion.actual) { <span class="selector-chip chip-current">Actual</span> }
+                      @else if (!opcion.disponible) { <span class="selector-chip chip-busy">{{ opcion.motivo }}</span> }
+                      @else if (opcion.aviso) { <span class="selector-chip chip-warn">{{ opcion.aviso }}</span> }
+                      @else { <span class="selector-chip chip-free">Libre</span> }
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+          <footer class="selector-footer">
+            @if (sel.horario.aula_fijada) {
+              <button class="secondary-button" type="button" (click)="chooseAula(null)">Volver a automático</button>
+            } @else { <span class="field-hint">Al elegir uno, el salón queda fijado y la asignación automática no lo mueve.</span> }
+            <button class="secondary-button" type="button" (click)="selector.set(null)">Cerrar</button>
+          </footer>
+        </section>
+      </div>
+    }
+
+    @if (confirmState(); as confirm) {
+      <div class="dialog-backdrop" (click)="confirmCancel()">
+        <section class="editor-dialog confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message" (click)="$event.stopPropagation()">
+          <h2 id="confirm-title">{{ confirm.title }}</h2>
+          <p id="confirm-message">{{ confirm.message }}</p>
+          <div class="dialog-actions">
+            <button class="secondary-button" type="button" (click)="confirmCancel()">{{ confirm.danger ? 'Cancelar' : 'No, volver' }}</button>
+            <button [class]="confirm.danger ? 'danger-button' : 'primary-button'" type="button" (click)="confirmAccept()">{{ confirm.label }}</button>
+          </div>
+        </section>
+      </div>
+    }
+
+    <div class="toast-stack" aria-live="polite">
+      @for (toast of toasts(); track toast.id) {
+        <div class="toast" [class.toast-success]="toast.kind === 'success'" [attr.role]="toast.kind === 'error' ? 'alert' : 'status'">
+          <p>{{ toast.message }}</p>
+          <button type="button" aria-label="Cerrar aviso" (click)="dismissToast(toast.id)">×</button>
+        </div>
+      }
     </div>
   </div>
-</main>
-
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * The content above * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * is only a placeholder * * * * * * * * * * * -->
-<!-- * * * * * * * * * * and can be replaced.  * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * End of Placeholder  * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-
-
-<router-outlet />
+}

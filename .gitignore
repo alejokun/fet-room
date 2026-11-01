@@ -13,3 +13,10 @@ frontend/fet-room-app/dist/
 .idea/
 .env
 .DS_Store
+
+# Información privada / de la institución (no se sube al repositorio)
+Anexo*.pdf
+Capacidad_Instalada_Aulas*.xlsx
+*.xlsx
+start.sh
+stop.sh
